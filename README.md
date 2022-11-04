@@ -8,6 +8,5 @@ Below is the source code for NIZKP DLog Scheme
 
 ### To Run
 
-- Run the build
-```cargo run
-```
+- cargo run
+
