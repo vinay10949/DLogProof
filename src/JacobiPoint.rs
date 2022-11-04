@@ -3,7 +3,6 @@
 use ibig::{ibig, IBig};
 use lazy_static::lazy_static;
 use num_traits::sign::Signed;
-use serde::{Deserialize, Serialize};
 use std::{borrow::Borrow, ops::ShrAssign};
 
 mod curve {
