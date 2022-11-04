@@ -3,7 +3,6 @@ use crate::JacobiPoint::{Point, PointJacobi};
 use ibig::IBig;
 use rand::Rng;
 use sha256::digest;
-use std::collections::HashMap;
 
 fn generate_random_number() -> i32 {
     let mut rng = rand::thread_rng();
@@ -100,7 +99,6 @@ fn main() {
     let sid = "sid";
     let pid = 1;
     let x = generate_random_number();
-    println!("{:?} ", x);
     let private_key = IBig::from_str_radix(
         "20775598474904240222758871485654738649026525153462921990999819694398496339603",
         10,
@@ -112,7 +110,6 @@ fn main() {
     for _i in 1..25 {
         point = point.mul(&private_key);
     }
-    println!("{:x},{:x}", point.x, point.y);
     let start_proof = std::time::Instant::now();
     let dlog_proof = DLogProof::prove(
         sid,
@@ -122,10 +119,9 @@ fn main() {
         PointJacobi::from_affine(base_point.clone()),
     );
     println!(
-        "Proof computation time {:?} ",
-        start_proof.elapsed().as_millis()
+        "Proof computation time {:?} nanos_secs",
+        start_proof.elapsed().as_nanos()
     );
-    println!("Proof {:?} {:?} ", dlog_proof.t.x, dlog_proof.t.y);
     println!("Proof {:?} ", dlog_proof.s);
     let result = dlog_proof.verify(
         sid,
@@ -134,8 +130,8 @@ fn main() {
         PointJacobi::from_affine(base_point),
     );
     println!(
-        "Verify computation time: {:?} ",
-        start_proof.elapsed().as_millis()
+        "Verify computation time: {:?} nano_secs",
+        start_proof.elapsed().as_nanos()
     );
     if result {
         println!("{:?} ", "DLOG proof is correct");
