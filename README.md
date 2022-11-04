@@ -10,3 +10,4 @@ Below is the source code for NIZKP DLog Scheme
 
 - Run the build
 ```cargo run
+```
