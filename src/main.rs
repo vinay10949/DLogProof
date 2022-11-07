@@ -33,13 +33,13 @@ impl DLogProof {
     ///
     /// A hash of the points.
     fn hash_points(sid: &str, pid: i32, points: Vec<PointJacobi>) -> IBig {
-        let mut point_feild = vec![];
-        point_feild.extend(sid.as_bytes());
-        point_feild.extend(IBig::from(pid).to_string().as_bytes());
+        let mut point_field = vec![];
+        point_field.extend(sid.as_bytes());
+        point_field.extend(IBig::from(pid).to_string().as_bytes());
         for point in points {
-            point_feild.extend(point.as_bytes());
+            point_field.extend(point.as_bytes());
         }
-        let digest = digest(&point_feild[..]);
+        let digest = digest(&point_field[..]);
         IBig::from_str_radix(&digest, 32).unwrap()
     }
 
