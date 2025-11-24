@@ -1,141 +1,102 @@
-mod JacobiPoint;
-use crate::JacobiPoint::{Point, PointJacobi};
+//! Example demonstrating the DLogProof library.
+//!
+//! This example shows how to:
+//! 1. Generate a secret and corresponding public key
+//! 2. Create a zero-knowledge proof of knowledge of the discrete logarithm
+//! 3. Verify the proof
+//! 4. Demonstrate that invalid proofs fail verification
+
+use dlogproof::{Point, PointJacobi, Prover, Verifier};
 use ibig::IBig;
-use rand::Rng;
-use sha256::digest;
-
-fn generate_random_number() -> i32 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(1..50)
-}
-
-struct DLogProof {
-    t: PointJacobi,
-    s: IBig,
-}
-
-impl DLogProof {
-    /*
-       Non-interactive Schnorr ZK DLOG Proof scheme with a Fiat-Shamir transformation
-       ";
-
-    */
-
-    /// `hash_points` takes a string, an integer, and a vector of points, and returns a big integer
-    ///
-    /// Arguments:
-    ///
-    /// * `sid`: the id of the signature
-    /// * `pid`: the id of the point
-    /// * `points`: The points that are being hashed.
-    ///
-    /// Returns:
-    ///
-    /// A hash of the points.
-    fn hash_points(sid: &str, pid: i32, points: Vec<PointJacobi>) -> IBig {
-        let mut point_feild = vec![];
-        point_feild.extend(sid.as_bytes());
-        point_feild.extend(IBig::from(pid).to_string().as_bytes());
-        for point in points {
-            point_feild.extend(point.as_bytes());
-        }
-        let digest = digest(&point_feild[..]);
-        IBig::from_str_radix(&digest, 32).unwrap()
-    }
-
-    /// > The prover generates a random number `r`, computes `t = r*G` and `c = H(sid, pid, G, y, t)`,
-    /// and then computes `s = r + c*x` and returns the proof `(t, s)`
-    ///
-    /// Arguments:
-    ///
-    /// * `sid`: the signature id
-    /// * `pid`: the participant id
-    /// * `x`: the secret number
-    /// * `y`: the point that we want to prove that we know the discrete logarithm of
-    /// * `base_point`: The base point of the group.
-    ///
-    /// Returns:
-    ///
-    /// A DLogProof struct containing the t and s values.
-    fn prove(sid: &str, pid: i32, x: i32, y: PointJacobi, base_point: PointJacobi) -> DLogProof {
-        "y = x*G";
-        let r = generate_random_number();
-        let t = base_point.mul_unsafe(&IBig::from(r));
-        let c = DLogProof::hash_points(sid, pid, vec![base_point, y, t.clone()]);
-        let curve_order: IBig = IBig::from_str_with_radix_prefix(
-            "115792089237316195423570985008687907852837564279074904382605163141518161494337",
-        )
-        .unwrap();
-        let s = (r + (c * x)) % curve_order;
-        return DLogProof { t, s };
-    }
-
-    /// > The function verifies that the point `t` is the sum of the base point multiplied by `s` and
-    /// the point `y` multiplied by the hash of the inputs
-    ///
-    /// Arguments:
-    ///
-    /// * `sid`: the session id
-    /// * `pid`: the id of the prover
-    /// * `y`: the public key
-    /// * `base_point`: the base point of the group
-    ///
-    /// Returns:
-    ///
-    /// a boolean value.
-    fn verify(&self, sid: &str, pid: i32, y: PointJacobi, base_point: PointJacobi) -> bool {
-        let c = DLogProof::hash_points(
-            sid,
-            pid,
-            vec![base_point.clone(), y.clone(), self.t.clone()],
-        );
-        let lhs = base_point.mul_unsafe(&self.s);
-        let rhs = self.t.add(&y.mul_unsafe(&c));
-        lhs == rhs
-    }
-}
+use std::time::Instant;
 
 fn main() {
-    let sid = "sid";
-    let pid = 1;
-    let x = generate_random_number();
-    let private_key = IBig::from_str_radix(
-        "20775598474904240222758871485654738649026525153462921990999819694398496339603",
-        10,
-    )
-    .unwrap();
+    println!("=== DLogProof: Non-Interactive Zero-Knowledge Discrete Logarithm Proof ===\n");
 
-    let base_point = Point::generator();
-    let mut point = base_point.clone();
-    for _i in 1..25 {
-        point = point.mul(&private_key);
+    // Session and participant identifiers
+    let session_id = "example_session";
+    let participant_id = 1;
+
+    // Generate the base point (generator)
+    let g = Point::generator();
+    let g_jacobi = PointJacobi::from_affine(g.clone());
+
+    println!("1. Generating secret and public key...");
+    
+    // Generate a secret value (this is what we want to prove knowledge of)
+    let secret = IBig::from(123456789);
+    
+    // Compute the public key: Y = secret * G
+    let public_key = g.mul(&secret);
+    let public_key_jacobi = PointJacobi::from_affine(public_key);
+    
+    println!("   Secret: {} (this would normally be kept private!)", secret);
+    println!("   Public key computed: Y = secret * G\n");
+
+    // ===== VALID PROOF EXAMPLE =====
+    println!("2. Creating zero-knowledge proof...");
+    let start_proof = Instant::now();
+    
+    let proof = Prover::prove(
+        session_id,
+        participant_id,
+        &secret,
+        &public_key_jacobi,
+        &g_jacobi,
+    );
+    
+    let proof_time = start_proof.elapsed();
+    println!("   Proof created in {:?}", proof_time);
+    println!("   Proof response (s): {}\n", proof.s);
+
+    println!("3. Verifying the proof...");
+    let start_verify = Instant::now();
+    
+    let result = Verifier::verify(
+        &proof,
+        session_id,
+        participant_id,
+        &public_key_jacobi,
+        &g_jacobi,
+    );
+    
+    let verify_time = start_verify.elapsed();
+    println!("   Verification completed in {:?}", verify_time);
+    
+    match result {
+        Ok(()) => println!("   ✓ Proof is VALID! The prover knows the discrete logarithm.\n"),
+        Err(e) => println!("   ✗ Proof is INVALID: {}\n", e),
     }
-    let start_proof = std::time::Instant::now();
-    let dlog_proof = DLogProof::prove(
-        sid,
-        pid,
-        x as i32,
-        PointJacobi::from_affine(point.clone()),
-        PointJacobi::from_affine(base_point.clone()),
+
+    // ===== INVALID PROOF EXAMPLE =====
+    println!("4. Testing with an invalid proof (wrong secret)...");
+    
+    let wrong_secret = IBig::from(999999999);
+    let invalid_proof = Prover::prove(
+        session_id,
+        participant_id,
+        &wrong_secret,  // Using wrong secret!
+        &public_key_jacobi,
+        &g_jacobi,
     );
-    println!(
-        "Proof computation time {:?} nanos_secs",
-        start_proof.elapsed().as_nanos()
+    
+    let invalid_result = Verifier::verify(
+        &invalid_proof,
+        session_id,
+        participant_id,
+        &public_key_jacobi,
+        &g_jacobi,
     );
-    println!("Proof {:?} ", dlog_proof.s);
-    let result = dlog_proof.verify(
-        sid,
-        pid,
-        PointJacobi::from_affine(point),
-        PointJacobi::from_affine(base_point),
-    );
-    println!(
-        "Verify computation time: {:?} nano_secs",
-        start_proof.elapsed().as_nanos()
-    );
-    if result {
-        println!("{:?} ", "DLOG proof is correct");
-    } else {
-        println!("{:?} ", "DLOG proof is not correct");
+    
+    match invalid_result {
+        Ok(()) => println!("   ✗ Unexpected: Invalid proof was accepted!"),
+        Err(e) => println!("   ✓ As expected, invalid proof was rejected: {}\n", e),
     }
+
+    // ===== PERFORMANCE SUMMARY =====
+    println!("=== Performance Summary ===");
+    println!("Proof generation: {:?}", proof_time);
+    println!("Proof verification: {:?}", verify_time);
+
 }
+

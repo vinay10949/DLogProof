@@ -1,13 +1,30 @@
 [package]
-name = "DLogProof"
+name = "dlogproof"
 version = "0.1.0"
 edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Non-interactive zero-knowledge discrete logarithm proofs using Schnorr protocol with Fiat-Shamir transformation"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/DLogProof"
+keywords = ["cryptography", "zero-knowledge", "schnorr", "elliptic-curve", "secp256k1"]
+categories = ["cryptography"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "dlogproof"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dlogproof-example"
+path = "src/main.rs"
 
 [dependencies]
-rand = "0.8.5"
 ibig = "0.3.6"
 sha256 = "1.1.1"
 lazy_static = "1.4.0"
 num-traits = "0.2.15"
+rand = "0.8.5"
+
+[dev-dependencies]
+criterion = "0.5"
+
+
